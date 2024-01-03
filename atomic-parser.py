@@ -87,13 +87,13 @@ class AtomicParser:
                     'num_without_dependencies': non_dependencies_tests
                 }
                 
-
             except yaml.YAMLError as exc:
                 print(exc)
 
-atomictests = AtomicParser()
+if __name__== '__main__':
+    atomictests = AtomicParser()
 
-tests = atomictests.parse_repo()
+    technqiues = atomictests.parse_repo()
 
-for test in tests:
-     atomictests.print_test(atomictests.parse_tests(test), True)
+    for technqiue in technqiues:
+        atomictests.print_test(atomictests.parse_tests(technqiues), True)
