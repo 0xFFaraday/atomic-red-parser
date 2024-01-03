@@ -21,6 +21,7 @@ class AtomicParser:
     
     def print_test(self, tests, dependencies):
         
+        # ignores technique if all/none of the tests have dependencies
         if dependencies:
             if tests['num_without_dependencies'] == tests['num_of_tests']:
                 return
@@ -56,7 +57,7 @@ class AtomicParser:
             print()
         
 
-    # parses each individual test with specified params 
+    # parses each individual technique and their tests
     def parse_tests(self, ttp):
 
         with open(ttp, 'r') as stream:
