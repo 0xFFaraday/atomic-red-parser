@@ -1,11 +1,13 @@
 import os
 import yaml
 import re
+import csv
 
 class AtomicParser:
     def __init__(self) -> None:
-        supported_platforms = ['windows', 'linux', 'macos']
-        
+        self.supported_platforms = ['windows', 'linux', 'macos']
+        self.current_dir = os.getcwd()
+        self.parsed_tests = []
         # Grab TTPs
         if 'atomics' in os.listdir('../atomic-red-team'):
             os.chdir('../atomic-red-team/atomics')
@@ -19,6 +21,17 @@ class AtomicParser:
 
         return ttps_yaml
     
+    def output_to_csv(self, tests):
+        path = self.current_dir + '/output.csv'
+
+        with open(path, 'w+', newline='', encoding='utf-8') as file:
+            writer = csv.writer(file)
+            writer.writerow(['display_name', 'technique_id', 'payload'])
+            
+            for test in tests:
+                writer.writerow([test['display_name'], test['technique_id'], test['payload']])
+            
+
     def print_test(self, tests, dependencies, regex = False):
         
         # ignores technique if all/none of the tests have dependencies
@@ -42,7 +55,13 @@ class AtomicParser:
                 if ('command' in test['executor'] and re.search(download_depenencies, test["executor"]["command"])):
                     matched_tests.append(test)
             valid_tests = matched_tests
-
+        
+        tests_to_output = {
+                'display_name':tests['display_name'],
+                'technique_id': tests['ttp_code'],
+                'payload': None
+            }
+        
         print(f'MITRE TECHNIQUE NAME:', tests['display_name'])
         print(f'TECHNIQUE ID:', tests['ttp_code'])
         print(f'Total Number of Tests: {tests["num_of_tests"]}')
@@ -61,10 +80,14 @@ class AtomicParser:
                 
             if ('command' in test['executor']):
                 print(f'PAYLOAD:\n{test["executor"]["command"]}')
+                tests_to_output['payload'] = test["executor"]["command"]
             else:
                 print('TEST HAS NO PROVIDED COMMANDS/PAYLOADS')
+                tests_to_output['payload'] = test["executor"]["command"]
             print()
         
+        if len(valid_tests) > 0:
+            self.parsed_tests.append(tests_to_output)
 
     # parses each individual technique and their tests
     def parse_tests(self, ttp):
@@ -105,4 +128,7 @@ if __name__== '__main__':
     technqiues = atomictests.parse_repo()
 
     for technqiue in technqiues:
-        atomictests.print_test(atomictests.parse_tests(technqiue), True, True)
+        # True, True means checks for dependencies and sees if the payload contains the matching regex
+        atomictests.print_test(atomictests.parse_tests(technqiue), True)
+        
+    atomictests.output_to_csv(atomictests.parsed_tests)
