@@ -1,16 +1,16 @@
 import os
 import yaml
+import re
 
 class AtomicParser:
     def __init__(self) -> None:
         supported_platforms = ['windows', 'linux', 'macos']
         
-        
         # Grab TTPs
         if 'atomics' in os.listdir('../atomic-red-team'):
             os.chdir('../atomic-red-team/atomics')
         else:
-            print("Ensure parser is installed as a sibling folder for atomic red team")
+            print('Ensure parser is installed as a sibling folder for atomic red team')
 
 
     #ensures proper TTPs are being pulled
@@ -19,7 +19,7 @@ class AtomicParser:
 
         return ttps_yaml
     
-    def print_test(self, tests, dependencies):
+    def print_test(self, tests, dependencies, regex = False):
         
         # ignores technique if all/none of the tests have dependencies
         if dependencies:
@@ -34,16 +34,25 @@ class AtomicParser:
              else:
                 valid_tests = tests['tests_without_depends']
 
-        print(f"MITRE TECHNIQUE NAME:", tests['display_name'])
-        print(f"TECHNIQUE ID:", tests['ttp_code'])
-        print(f"Total Number of Tests: {tests['num_of_tests']}")
-        print(f"Tests which do require dependencies: {tests['num_with_dependencies']}")
-        print(f"Tests which do NOT require dependencies: {tests['num_without_dependencies']}")
+        #search for unique pattern/s in test commands
+        if regex:
+            download_depenencies = re.compile('https?://')
+            matched_tests = []
+            for test in valid_tests:
+                if ('command' in test['executor'] and re.search(download_depenencies, test["executor"]["command"])):
+                    matched_tests.append(test)
+            valid_tests = matched_tests
+
+        print(f'MITRE TECHNIQUE NAME:', tests['display_name'])
+        print(f'TECHNIQUE ID:', tests['ttp_code'])
+        print(f'Total Number of Tests: {tests["num_of_tests"]}')
+        print(f'Tests which do require dependencies: {tests["num_with_dependencies"]}')
+        print(f'Tests which do NOT require dependencies: {tests["num_without_dependencies"]}')
         print()
         
         for test in valid_tests:
-            print(f"Procedure Name:\n{test['name']}")
-            print(f"Description:\n{test['description']}")
+            print(f'Procedure Name:\n{test["name"]}')
+            print(f'Description:\n{test["description"]}')
             
             if 'dependencies' in test:
                 for pre_req in test['dependencies']:
@@ -51,9 +60,9 @@ class AtomicParser:
                     print('Dependency Prereq command:', pre_req['prereq_command'])
                 
             if ('command' in test['executor']):
-                print(f"PAYLOAD:\n{test['executor']['command']}")
+                print(f'PAYLOAD:\n{test["executor"]["command"]}')
             else:
-                print("TEST HAS NO PROVIDED COMMANDS/PAYLOADS")
+                print('TEST HAS NO PROVIDED COMMANDS/PAYLOADS')
             print()
         
 
@@ -69,10 +78,10 @@ class AtomicParser:
 
                 num_of_tests = len(contents['atomic_tests'])
 
-                tests_with_depends = [test for test in contents['atomic_tests'] if "dependencies" in test]
+                tests_with_depends = [test for test in contents['atomic_tests'] if 'dependencies' in test]
 
-                tests_without_depends = [test for test in contents['atomic_tests'] if "dependencies" not in test]
-                
+                tests_without_depends = [test for test in contents['atomic_tests'] if 'dependencies' not in test]
+            
                 tests_require_dependencies = len(tests_with_depends)
 
                 non_dependencies_tests = len(tests_without_depends)
@@ -96,4 +105,4 @@ if __name__== '__main__':
     technqiues = atomictests.parse_repo()
 
     for technqiue in technqiues:
-        atomictests.print_test(atomictests.parse_tests(technqiues), True)
+        atomictests.print_test(atomictests.parse_tests(technqiue), True, True)
