@@ -1,11 +1,6 @@
 import os
 import yaml
 
-#mitre_list = []
-# for folder in os.listdir():
-#     if folder.startswith('T1'):
-#         mitre_list.append(folder)
-
 class AtomicParser:
     def __init__(self) -> None:
         supported_platforms = ['windows', 'linux', 'macos']
@@ -94,68 +89,6 @@ class AtomicParser:
 
             except yaml.YAMLError as exc:
                 print(exc)
-                    #print(ttp_code)
-                    #print(f"TESTS WITH DEPENDS:\n{tests_with_depends}")
-                    #print()
-                    #print(f"TESTS WITHOUT DEPENDS:\n {tests_without_depends}")
-                                            
-                    # for test in contents['atomic_tests']:
-                        
-                    #     if counter == 0 and ("dependencies" not in test) != dependencies:
-                    #         print(ttp_code,'--' ,display_name)
-
-                    #     if dependencies == False:
-                    
-                    #         if "dependencies" not in test:
-                    #             non_dependencies_tests += 1
-                                
-                    #             print(f"ATOMIC TEST NAME --", test['name'])
-                    #             print(test['description'])
-                    #             if ('command' in test['executor']):
-                    #                 print(f"PAYLOAD ", test['executor']['command'])
-                    #             else:
-                    #                 print("TEST HAS NO PROVIDED COMMANDS")
-                            
-                    #             print('---------------')
-                                
-                            
-                    #     elif dependencies and 'dependencies' in test:
-                    #         tests_require_dependencies += 1
-
-                    #         print(f"ATOMIC TEST NAME --", test['name'])
-                    #         print(test['description'])
-                    #         print()
-                            
-                    #         if len(test['dependencies']) > 1:
-                    #             print("REQUIRES MULTIPLE DEPENDENCIES")
-                            
-                    #         for pre_req in test['dependencies']:
-                    #             print('Dependency Description:', pre_req['description'])
-                    #             print('Dependency Prereq command:', pre_req['prereq_command'])
-                        
-            
-                    #         if ('command' in test['executor']):
-                    #             print(f"PAYLOAD ", test['executor']['command'])
-
-                    #         else:
-                    #                 print("TEST HAS NO PROVIDED COMMANDS")
-                            
-                            #pre_reqs = dependencies
-                    
-                            
-                            
-                    #        print('---------------')
-
-                    #if non_dependencies_tests != 0 and tests_require_dependencies != 0:
-                    
-                    #print(ttp_code)
-                #     print(f"Total Number of Tests: {num_of_tests}")
-                #     print(f"Requires Dependencies: {tests_require_dependencies}")
-                #     print(f"No Dependencies: {non_dependencies_tests}")
-                #     print('---------------')
-
-                # except yaml.YAMLError as exc:
-                #     print(exc)
 
 atomictests = AtomicParser()
 
