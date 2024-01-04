@@ -6,13 +6,16 @@ This project serves as a basis to search through all techniques and their associ
 
 ```shell
 git clone https://github.com/redcanaryco/atomic-red-team.git
+
 git clone https://github.com/0xFFaraday/atomic-red-parser.git
 ```
 
 ## Usage
 
 ```shell
-cd atomic-red-parser && python3 atomic-parser.py
+cd atomic-red-parser && pip install -r requirements.txt
+
+python3 atomic-parser.py
 ```
 
 ### Features
