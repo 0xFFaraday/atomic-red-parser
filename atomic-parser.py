@@ -2,23 +2,66 @@ import os
 import yaml
 import re
 import csv
+import fnmatch
+import platform
+
+
 
 class AtomicParser:
     def __init__(self) -> None:
+        self.operating_system = platform.system()
         self.supported_platforms = ['windows', 'linux', 'macos']
         self.current_dir = os.getcwd()
         self.parsed_tests = []
         # Grab TTPs
         if 'atomics' in os.listdir('../atomic-red-team'):
             os.chdir('../atomic-red-team/atomics')
+            #print(os.listdir())
         else:
             print('Ensure parser is installed as a sibling folder for atomic red team')
 
+    def download_depenencies(self, tests):
+        os.chdir(self.current_dir)
+
+        for test in tests:
+
+            if test['technique_id'] not in os.listdir():
+                os.mkdir(test['technique_id'])
+
+        
+        for test in tests:
+
+            commands = test['payload'].split()
+            for command in commands:
+                if command.startswith('http'):
+                    print("Attempting to Download", command)
+                    
+                    if 'windows' in self.operating_system:
+                        os.popen(f'IEX (New-Object System.Net.Webclient).DownloadString("{command}") -O {test["technique_id"]}/{command.split("/")[-1]}')
+                    else:
+                        os.popen(f'wget {command} -O {test["technique_id"]}/{command.split("/")[-1]}')
+        
+
+
     #ensures proper TTPs are being pulled within repo
     def parse_repo(self):
-        ttps_yaml = os.popen(f'find . -name "*.yaml"| grep -vi "src" | grep -vi "Indexes"').read().split()
+        ttps_yamls = []
 
-        return ttps_yaml
+        for root, dirs, files in os.walk(os.getcwd()):
+            for file in files:
+                if fnmatch.fnmatch(file, "*.yaml"):
+                    file_path = os.path.abspath(os.path.join(root, file))
+                    if "src" not in file_path and "Indexes" not in file_path:
+                        ttps_yamls.append(file_path)
+
+        # if 'windows' in self.operating_system:
+        #     ttps_yaml = [os.path.abspath(name) for name in os.listdir(".") if os.path.isdir(name)]
+        # else:
+        
+        #     ttps_yaml = os.popen(f'find . -name "*.yaml"| grep -vi "src" | grep -vi "Indexes"').read().split()
+
+        #print(ttps_yamls)
+        return ttps_yamls
     
     def output_to_csv(self, tests):
         path = self.current_dir + '/output.csv'
@@ -96,6 +139,7 @@ class AtomicParser:
         with open(ttp, 'r') as stream:
             
             try:
+                print("Attempting to load:", ttp)
                 contents = yaml.safe_load(stream)
                 ttp_code = contents['attack_technique']
                 display_name = contents['display_name']
@@ -133,3 +177,5 @@ if __name__== '__main__':
         atomictests.print_test(atomictests.parse_tests(technqiue), False, True)
         
     atomictests.output_to_csv(atomictests.parsed_tests)
+
+    atomictests.download_depenencies(atomictests.parsed_tests)
