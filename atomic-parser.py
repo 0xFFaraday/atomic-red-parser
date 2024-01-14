@@ -36,8 +36,8 @@ class AtomicParser:
                 if command.startswith('http'):
                     print("Attempting to Download", command)
                     
-                    if 'windows' in self.operating_system:
-                        os.popen(f'IEX (New-Object System.Net.Webclient).DownloadString("{command}") -O {test["technique_id"]}/{command.split("/")[-1]}')
+                    if 'Windows' in self.operating_system:
+                        os.popen(f'powershell -c IEX (New-Object System.Net.Webclient).DownloadString("{command}") -O {test["technique_id"]}/{command.split("/")[-1]}')
                     else:
                         os.popen(f'wget {command} -O {test["technique_id"]}/{command.split("/")[-1]}')
         
@@ -136,7 +136,7 @@ class AtomicParser:
     # parses each individual technique and their tests
     def parse_tests(self, ttp):
 
-        with open(ttp, 'r') as stream:
+        with open(ttp, 'r', encoding='utf-8') as stream:
             
             try:
                 print("Attempting to load:", ttp)
