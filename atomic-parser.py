@@ -37,7 +37,9 @@ class AtomicParser:
                     print("Attempting to Download", command)
                     
                     if 'Windows' in self.operating_system:
-                        os.popen(f'powershell -c IEX (New-Object System.Net.Webclient).DownloadString("{command}") -O {test["technique_id"]}/{command.split("/")[-1]}')
+                        #os.popen(f'powershell -c IEX (New-Object System.Net.Webclient).DownloadString("{command}") -O {test["technique_id"]}/{command.split("/")[-1]}')
+                        #uses PS alias to download and redirect file to proper directory
+                        os.popen(f'powershell -c wget {command} -O {test["technique_id"]}/{command.split("/")[-1]}')
                     else:
                         os.popen(f'wget {command} -O {test["technique_id"]}/{command.split("/")[-1]}')
         
