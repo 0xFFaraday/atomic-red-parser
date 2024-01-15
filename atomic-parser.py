@@ -28,13 +28,14 @@ class AtomicParser:
             if test['technique_id'] not in os.listdir():
                 os.mkdir(test['technique_id'])
 
-        file_extension = re.compile("\..*$")
+        #file_extension = re.compile("\..*$")
+        file_extension = re.compile("\/\w+\.\w{2,4}($|\?)")
 
         for test in tests:
 
             commands = test['payload'].split('\'')
             for command in commands:
-                if command.startswith('http'):# and re.search(command, file_extension):
+                if command.startswith('http') and file_extension.search(command):# and re.search(command, file_extension):
                     print("Attempting to Download", command)
                     
                     if 'Windows' in self.operating_system:
