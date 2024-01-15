@@ -22,9 +22,12 @@ class AtomicParser:
 
     def download_depenencies(self, tests):
         os.chdir(self.current_dir)
+        if 'output' not in os.listdir():
+            os.mkdir('output')
+
+        os.chdir('./output')
 
         for test in tests:
-
             if test['technique_id'] not in os.listdir():
                 os.mkdir(test['technique_id'])
 
@@ -34,8 +37,10 @@ class AtomicParser:
         for test in tests:
 
             commands = test['payload'].split('\'')
+            
             for command in commands:
-                if command.startswith('http') and file_extension.search(command):# and re.search(command, file_extension):
+                #ensure URL has file to download within it
+                if command.startswith('http') and file_extension.search(command):
                     print("Attempting to Download", command)
                     
                     if 'Windows' in self.operating_system:
@@ -45,7 +50,6 @@ class AtomicParser:
                     else:
                         os.popen(f'wget {command} -O {test["technique_id"]}/{command.split("/")[-1]} &')
         
-
 
     #ensures proper TTPs are being pulled within repo
     def parse_repo(self):
