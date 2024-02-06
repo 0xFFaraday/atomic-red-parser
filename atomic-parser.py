@@ -4,8 +4,12 @@ import re
 import csv
 import fnmatch
 import platform
+import typer
+from rich.console import Console
+from rich.table import Table
 
 
+console = Console()
 
 class AtomicParser:
     def __init__(self) -> None:
@@ -81,16 +85,20 @@ class AtomicParser:
             for test in tests:
                 writer.writerow([test['display_name'], test['technique_id'], test['test_name'], test['payload']])
             
+            console.print(f"Successful creation of CSV - {path}", style="white on blue")
+            
     def print_test(self, tests, dependencies, regex = False):
-        
+        table_tests = Table()
         # ignores technique if all/none of the tests have dependencies
         if dependencies:
+            table_tests = Table("Procedure Name", "Description", "PAYLOAD", "Dependencies", title="Collection of Procedures")
             if tests['num_without_dependencies'] == tests['num_of_tests']:
                 return
             else:
                 valid_tests = tests['tests_with_depends']
 
         else:
+             table_tests = Table("Procedure Name", "Description", "PAYLOAD", title="Collection of Procedures")
              if tests['num_with_dependencies'] == tests['num_of_tests']:
                 return
              else:
@@ -113,33 +121,57 @@ class AtomicParser:
                 'payload': None
             }
         
-        print(f'MITRE TECHNIQUE NAME:', tests['display_name'])
-        print(f'TECHNIQUE ID:', tests['ttp_code'])
-        print(f'Total Number of Tests: {tests["num_of_tests"]}')
-        print(f'Tests which do require dependencies: {tests["num_with_dependencies"]}')
-        print(f'Tests which do NOT require dependencies: {tests["num_without_dependencies"]}')
-        print()
-        
+        table = Table("MITRE TECHNIQUE NAME", "TECHNIQUE ID", "Total Number of Tests", "Tests which do require dependencies", "Tests which do NOT require dependencies:")
+
+        table.add_row(tests['display_name'], tests['ttp_code'], str(tests["num_of_tests"]), str(tests["num_with_dependencies"]), str(tests["num_without_dependencies"]))
+
+        # print(f'MITRE TECHNIQUE NAME:', tests['display_name'])
+        # print(f'TECHNIQUE ID:', tests['ttp_code'])
+        # print(f'Total Number of Tests: {tests["num_of_tests"]}')
+        # print(f'Tests which do require dependencies: {tests["num_with_dependencies"]}')
+        # print(f'Tests which do NOT require dependencies: {tests["num_without_dependencies"]}')
+        # print()
+        console.print(table)
+
+    
         for test in valid_tests:
-            print(f'Procedure Name:\n{test["name"]}')
-            print(f'Description:\n{test["description"]}')
+            dependencies_for_test_table = Table("Descriptions", "Prereq Commands", title="Collection of Dependencies")
+            # print(f'Procedure Name:\n{test["name"]}')
+            # print(f'Description:\n{test["description"]}')
             
+            dependencies_for_test = {"dependency_descriptions": [], "dependency_prereq_commands": []}
             if 'dependencies' in test:
                 for pre_req in test['dependencies']:
-                    print('Dependency Description:', pre_req['description'])
-                    print('Dependency Prereq command:', pre_req['prereq_command'])
+                    
+                    dependencies_for_test_table.add_row(pre_req['description'], pre_req['prereq_command'])
+                    #dependencies_for_test["dependency_descriptions"].append(pre_req['description'])
+                    #dependencies_for_test["dependency_prereq_commands"].append(pre_req['prereq_command'])
+                    #print('Dependency Description:', pre_req['description'])
+                    #print('Dependency Prereq command:', pre_req['prereq_command'])
                 
             if ('command' in test['executor']):
-                print(f'PAYLOAD:\n{test["executor"]["command"]}')
+                #print(f'PAYLOAD:\n{test["executor"]["command"]}')
                 tests_to_output['payload'] = test["executor"]["command"]
             else:
-                print('TEST HAS NO PROVIDED COMMANDS/PAYLOADS')
-                tests_to_output['payload'] = test["executor"]["command"]
-            print()
+                tests_to_output['payload'] = 'nah dawg'
+                #print('TEST HAS NO PROVIDED COMMANDS/PAYLOADS')
+                #tests_to_output['payload'] = test["executor"]["command"]
+            
+            #print(len(dependencies_for_test_table.columns))
+            if len(dependencies_for_test_table.rows) <= 0:
+                table_tests.add_row(test["name"], test["description"], tests_to_output['payload'])
+            
+            else:
+                table_tests.add_row(test["name"], test["description"], tests_to_output['payload'], dependencies_for_test_table)
+
+            
+            #print()
         
         tests_to_output['test_name'] = test["name"]
         if len(valid_tests) > 0:
             self.parsed_tests.append(tests_to_output)
+            console.print(table_tests)
+
 
     # parses each individual technique and their tests
     def parse_tests(self, ttp):
@@ -147,7 +179,8 @@ class AtomicParser:
         with open(ttp, 'r', encoding='utf-8') as stream:
             
             try:
-                print("Attempting to load:", ttp)
+                console.print(("Attempting to load:" + ttp), style="white on blue")
+                #print("Attempting to load:", ttp)
                 contents = yaml.safe_load(stream)
                 ttp_code = contents['attack_technique']
                 display_name = contents['display_name']
@@ -175,15 +208,18 @@ class AtomicParser:
             except yaml.YAMLError as exc:
                 print(exc)
 
-if __name__== '__main__':
+def main():
     atomictests = AtomicParser()
 
     technqiues = atomictests.parse_repo()
 
     for technqiue in technqiues:
         # True, True means checks for dependencies and sees if the payload contains the matching regex
-        atomictests.print_test(atomictests.parse_tests(technqiue), False, True)
+        atomictests.print_test(atomictests.parse_tests(technqiue), False, False)
         
     atomictests.output_to_csv(atomictests.parsed_tests)
+    #atomictests.download_depenencies(atomictests.parsed_tests)
 
-    atomictests.download_depenencies(atomictests.parsed_tests)
+
+if __name__== '__main__':
+    typer.run(main)
