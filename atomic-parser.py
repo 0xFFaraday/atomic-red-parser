@@ -81,14 +81,30 @@ class AtomicParser:
     def output_to_csv(self):
         path = self.current_dir + '/output.csv'
 
-        with open(path, 'w+', newline='', encoding='utf-8') as file:
-            writer = csv.writer(file)
-            writer.writerow(['display_name', 'technique_id', 'test_name', 'payload'])
-            
-            for test in self.parsed_tests:
-                writer.writerow([test['display_name'], test['technique_id'], test['test_name'], test['payload']])
-            
-            console.print(f"Successful creation of CSV - {path}", style="white on blue")
+        if 'output.csv' in os.listdir(self.current_dir):
+            userDelete = typer.prompt("Do you wish to overwrite the existing output.csv? (Y/N)")
+        
+            if userDelete.startswith("Y"):
+                with open(path, 'w', newline='', encoding='utf-8') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(['display_name', 'technique_id', 'test_name', 'payload'])
+                    
+                    for test in self.parsed_tests:
+                        writer.writerow([test['display_name'], test['technique_id'], test['test_name'], test['payload']])
+                
+                console.print(f"Successful creation of CSV - {path}", style="white on blue")
+            else:
+                console.print(f"No CSV has been created, did not overwrite existing CSV: {path}", style="white on red")
+        else:
+            with open(path, 'w', newline='', encoding='utf-8') as file:
+                    writer = csv.writer(file)
+                    writer.writerow(['display_name', 'technique_id', 'test_name', 'payload'])
+                    
+                    for test in self.parsed_tests:
+                        writer.writerow([test['display_name'], test['technique_id'], test['test_name'], test['payload']])
+
+                    console.print(f"Successful creation of CSV - {path}", style="white on blue")
+
             
     def print_test(self, tests, dependencies, custom_pattern):
         table_tests = Table()
