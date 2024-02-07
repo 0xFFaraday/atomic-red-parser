@@ -8,13 +8,13 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-
 console = Console()
 
 class AtomicParser:
-    def __init__(self) -> None:
+    def __init__(self, custom_pattern: str = "https?://") -> None:
         self.operating_system = platform.system()
         self.supported_platforms = ['windows', 'linux', 'macos']
+        self.pattern = re.compile(custom_pattern)
         self.current_dir = os.getcwd()
         self.parsed_tests = []
         # Grab TTPs
@@ -24,21 +24,24 @@ class AtomicParser:
         else:
             print('Ensure parser is installed as a sibling folder for atomic red team')
 
-    def download_depenencies(self, tests):
+    def download_depenencies(self):
         os.chdir(self.current_dir)
         if 'output' not in os.listdir():
             os.mkdir('output')
 
         os.chdir('./output')
-
-        for test in tests:
-            if test['technique_id'] not in os.listdir():
-                os.mkdir(test['technique_id'])
+        
+        matched_tests = []
+        for test in self.parsed_tests:
+            if ('payload' in test and re.search(self.pattern, test['payload'])):
+                matched_tests.append(test)
+                if test['technique_id'] not in os.listdir():
+                    os.mkdir(test['technique_id'])
 
         #file_extension = re.compile("\..*$")
         file_extension = re.compile("\/\w+\.\w{2,4}($|\?)")
-
-        for test in tests:
+            
+        for test in matched_tests:
 
             commands = test['payload'].split('\'')
             
@@ -75,19 +78,19 @@ class AtomicParser:
         #print(ttps_yamls)
         return ttps_yamls
     
-    def output_to_csv(self, tests):
+    def output_to_csv(self):
         path = self.current_dir + '/output.csv'
 
         with open(path, 'w+', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             writer.writerow(['display_name', 'technique_id', 'test_name', 'payload'])
             
-            for test in tests:
+            for test in self.parsed_tests:
                 writer.writerow([test['display_name'], test['technique_id'], test['test_name'], test['payload']])
             
             console.print(f"Successful creation of CSV - {path}", style="white on blue")
             
-    def print_test(self, tests, dependencies, regex = False):
+    def print_test(self, tests, dependencies, custom_pattern):
         table_tests = Table()
         # ignores technique if all/none of the tests have dependencies
         if dependencies:
@@ -105,12 +108,11 @@ class AtomicParser:
                 valid_tests = tests['tests_without_depends']
 
         #search for unique pattern/s in test commands
-        if regex:
-            download_depenencies = re.compile('https?://')
+        if custom_pattern:
             matched_tests = []
             
             for test in valid_tests:
-                if ('command' in test['executor'] and re.search(download_depenencies, test["executor"]["command"])):
+                if ('command' in test['executor'] and re.search(self.pattern, test["executor"]["command"])):
                     matched_tests.append(test)
             valid_tests = matched_tests
         
@@ -131,8 +133,6 @@ class AtomicParser:
         # print(f'Tests which do require dependencies: {tests["num_with_dependencies"]}')
         # print(f'Tests which do NOT require dependencies: {tests["num_without_dependencies"]}')
         # print()
-        console.print(table)
-
     
         for test in valid_tests:
             dependencies_for_test_table = Table("Descriptions", "Prereq Commands", title="Collection of Dependencies")
@@ -153,7 +153,7 @@ class AtomicParser:
                 #print(f'PAYLOAD:\n{test["executor"]["command"]}')
                 tests_to_output['payload'] = test["executor"]["command"]
             else:
-                tests_to_output['payload'] = 'nah dawg'
+                tests_to_output['payload'] = 'N/A - Check Test Details'
                 #print('TEST HAS NO PROVIDED COMMANDS/PAYLOADS')
                 #tests_to_output['payload'] = test["executor"]["command"]
             
@@ -164,14 +164,11 @@ class AtomicParser:
             else:
                 table_tests.add_row(test["name"], test["description"], tests_to_output['payload'], dependencies_for_test_table)
 
-            
-            #print()
-        
         tests_to_output['test_name'] = test["name"]
         if len(valid_tests) > 0:
             self.parsed_tests.append(tests_to_output)
+            console.print(table)
             console.print(table_tests)
-
 
     # parses each individual technique and their tests
     def parse_tests(self, ttp):
@@ -179,7 +176,6 @@ class AtomicParser:
         with open(ttp, 'r', encoding='utf-8') as stream:
             
             try:
-                console.print(("Attempting to load:" + ttp), style="white on blue")
                 #print("Attempting to load:", ttp)
                 contents = yaml.safe_load(stream)
                 ttp_code = contents['attack_technique']
@@ -206,20 +202,26 @@ class AtomicParser:
                 }
                 
             except yaml.YAMLError as exc:
-                print(exc)
+                console.log(exc)
 
-def main():
-    atomictests = AtomicParser()
+def main(dependencies: bool = False, custompattern: str = None, download: bool = False):
+    global atomictests
+    if custompattern == None:
+        atomictests = AtomicParser()
+    
+    else:
+        atomictests = AtomicParser(custompattern)
 
     technqiues = atomictests.parse_repo()
 
     for technqiue in technqiues:
         # True, True means checks for dependencies and sees if the payload contains the matching regex
-        atomictests.print_test(atomictests.parse_tests(technqiue), False, False)
+        atomictests.print_test(atomictests.parse_tests(technqiue), dependencies, custompattern)
         
-    atomictests.output_to_csv(atomictests.parsed_tests)
-    #atomictests.download_depenencies(atomictests.parsed_tests)
+    if download and custompattern == None:
+        atomictests.download_depenencies()
 
+    atomictests.output_to_csv()
 
 if __name__== '__main__':
     typer.run(main)
